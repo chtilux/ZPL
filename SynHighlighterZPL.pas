@@ -69,6 +69,7 @@ type
     FFieldDataAttri: TSynHighlighterAttributes;
     pvFieldData: Boolean;
     pvGraphic: Boolean;
+    FCommentScript: boolean;
 
     procedure NullProc;
     procedure KeyProc;
@@ -76,6 +77,7 @@ type
     procedure SlashProc;
     procedure NumberProc;
     procedure FieldDataProc;
+    procedure SetCommentScript(const Value: boolean);
   protected
     function GetDefaultAttribute(Index: Integer): TSynHighlighterAttributes; override;
   public
@@ -93,6 +95,9 @@ type
     property CommentAttri: TSynHighlighterAttributes read FCommentAttri write FCommentAttri;
     property NumberAttri: TSynHighlighterAttributes read FNumberAttri write FNumberAttri;
     property FieldDataAttri: TSynHighlighterAttributes read FFieldDataAttri write FFieldDataAttri;
+    (* // is not a ZPL comment, but in my needs yes (for scripting), so set
+           commentScript to False to disable // comments                      *)
+    property CommentScript: boolean read FCommentScript write SetCommentScript default True;
   end;
 
 implementation
@@ -116,6 +121,7 @@ begin
   inherited;
   pvFieldData := False;
   pvGraphic := False;
+  FCommentScript := True;
 
   FKeyAttri := TSynHighlighterAttributes.Create(SYNS_AttrKey, SYNS_FriendlyAttrKey);
   FKeyAttri.Foreground := clMaroon;
@@ -266,10 +272,15 @@ begin
   while IsNumberChar do Inc(Run);
 end;
 
+procedure TSynZPLSyn.SetCommentScript(const Value: boolean);
+begin
+  FCommentScript := Value;
+end;
+
 procedure TSynZPLSyn.SlashProc;
 begin
   // if it is not column 0 mark as tkText and get out of here
-  if Run > 0 then
+  if (Run > 0) or not(FCommentScript) then
   begin
     FTokenID := tkText;
     Inc(Run);
